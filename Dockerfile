@@ -17,22 +17,22 @@ RUN yarn build
 
 
 # Build server:
-FROM rust:1.51 as server-builder
+FROM ekidd/rust-musl-builder:1.51.0 as server-builder
 
 WORKDIR /app
-RUN USER=root cargo init --bin --name kidsability-checkout-assistant-server
+RUN cargo init --bin --name scaffold
 COPY ./server/Cargo.toml ./Cargo.toml
 RUN cargo build --release
 RUN rm src/*.rs
 
 COPY server/ ./
-RUN rm ./target/release/deps/kidsability_checkout_assistant_server*
 RUN cargo build --release
+RUN mv ./target/x86_64-unknown-linux-musl/release/kidsability-checkout-assistant-server ./target/release/
 
 
 # Build runtime image:
 FROM node:alpine AS runner
-RUN apk add --no-cache parallel
+RUN yarn global add concurrently
 
 WORKDIR /app
 COPY --from=client-builder /app/next.config.js ./
@@ -49,4 +49,4 @@ USER app
 
 EXPOSE 3000
 ENV NODE_ENV=production
-CMD ["parallel", "--will-cite", ':::', 'yarn start', 'server']
+CMD ["concurrently", "-n", "client,server", "yarn start", "./server"]
