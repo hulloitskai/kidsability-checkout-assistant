@@ -1,7 +1,9 @@
-name: backend
+name: server
+
 on:
   - push
   - pull_request
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,7 +29,7 @@ jobs:
         id: generate-tags
         uses: stevenxie/generate-docker-tags-action@v0.2.1
         with:
-          repo: stevenxie/api
+          repo: stevenxie/kidsability-checkout-assistant-server
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
