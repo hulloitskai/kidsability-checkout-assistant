@@ -67,13 +67,13 @@ const App: FC = () => {
               {subscriberCode && (
                 <VStack
                   align="stretch"
-                  p={1}
+                  p={1.5}
                   bg="blue.100"
                   color="blue.600"
-                  rounded="md"
+                  rounded="sm"
                 >
                   <Text fontSize="sm">Device Code:</Text>
-                  <Center p={1} pb={2}>
+                  <Center p={1} pb={2.5}>
                     <Text fontSize="xl" fontWeight="semibold">
                       {subscriberCode}
                     </Text>

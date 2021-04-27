@@ -20,7 +20,7 @@ impl Subscription {
         subscriber_code: String,
     ) -> FieldResult<impl Stream<Item = CheckoutItemObject>> {
         let notifier: &CheckoutNotifier = ctx.data_unchecked();
-        let receiver = notifier.subscribe(subscriber_code)?;
+        let receiver = notifier.subscribe(&subscriber_code)?;
         let stream = ReceiverStream::new(receiver);
         Ok(stream.map(|item| CheckoutItemObject::new(item)))
     }

@@ -1,8 +1,9 @@
+use anyhow::bail;
+use anyhow::Context as AnyhowContext;
 use anyhow::Result;
-use anyhow::{bail, format_err};
 
 use std::collections::HashMap as Map;
-use std::{collections::hash_map::Entry as MapEntry, sync::Mutex};
+use std::sync::Mutex;
 
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -14,7 +15,7 @@ pub struct CheckoutItem {
 
 #[derive(Default, Debug)]
 pub struct CheckoutNotifier {
-    channels: Mutex<Map<String, CheckoutChannel>>,
+    senders: Mutex<Map<String, Sender<CheckoutItem>>>,
 }
 
 impl CheckoutNotifier {
@@ -24,26 +25,15 @@ impl CheckoutNotifier {
 
     pub async fn notify(
         &self,
-        subscriber_code: String,
+        subscriber_code: &str,
         item: CheckoutItem,
     ) -> Result<()> {
-        use MapEntry::*;
         let sender = {
-            let mut channels = self.channels.lock().unwrap();
-            match channels.entry(subscriber_code.clone()) {
-                Occupied(entry) => {
-                    let channel = entry.get();
-                    if !channel.has_subscriber() {
-                        bail!("invalid subscriber code")
-                    }
-                    channel.sender.clone()
-                }
-                Vacant(entry) => {
-                    let channel = CheckoutChannel::new();
-                    let channel = entry.insert(channel);
-                    channel.sender.clone()
-                }
-            }
+            let senders = self.senders.lock().unwrap();
+            let sender = senders
+                .get(subscriber_code)
+                .context("invalid subscriber code")?;
+            sender.clone()
         };
         sender.send(item).await?;
         Ok(())
@@ -51,45 +41,14 @@ impl CheckoutNotifier {
 
     pub fn subscribe(
         &self,
-        subscriber_code: String,
+        subscriber_code: &str,
     ) -> Result<Receiver<CheckoutItem>> {
-        use MapEntry::*;
-        let mut channels = self.channels.lock().unwrap();
-        match channels.entry(subscriber_code.clone()) {
-            Occupied(mut entry) => {
-                let channel = entry.get_mut();
-                let receiver = channel
-                    .receiver
-                    .take()
-                    .ok_or_else(|| format_err!("already subscribed"))?;
-                Ok(receiver)
-            }
-            Vacant(entry) => {
-                let channel = CheckoutChannel::new();
-                let channel = entry.insert(channel);
-                let receiver = channel.receiver.take().unwrap();
-                Ok(receiver)
-            }
+        let mut senders = self.senders.lock().unwrap();
+        if senders.contains_key(subscriber_code) {
+            bail!("subscriber already exists")
         }
-    }
-}
-
-#[derive(Debug)]
-struct CheckoutChannel {
-    sender: Sender<CheckoutItem>,
-    receiver: Option<Receiver<CheckoutItem>>,
-}
-
-impl CheckoutChannel {
-    fn new() -> Self {
         let (sender, receiver) = channel(1);
-        Self {
-            sender,
-            receiver: Some(receiver),
-        }
-    }
-
-    fn has_subscriber(&self) -> bool {
-        self.receiver.is_none()
+        senders.insert(subscriber_code.to_owned(), sender);
+        Ok(receiver)
     }
 }

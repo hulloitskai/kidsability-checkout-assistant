@@ -28,10 +28,8 @@ const Checkout: FC = () => {
     `,
     {
       onError: error => {
-        if (error.message === "channel closed") {
-          window.localStorage.removeItem(SUBSCRIBER_CODE_KEY);
-          setSubscriberCode("");
-        }
+        window.localStorage.removeItem(SUBSCRIBER_CODE_KEY);
+        setSubscriberCode("");
       },
     },
   );

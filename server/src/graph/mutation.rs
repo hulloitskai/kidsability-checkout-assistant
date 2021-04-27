@@ -17,7 +17,7 @@ impl Mutation {
     ) -> FieldResult<CheckoutItemObject> {
         let notifier: &CheckoutNotifier = ctx.data_unchecked();
         let item = CheckoutItem { accession_code };
-        notifier.notify(subscriber_code, item.clone()).await?;
+        notifier.notify(&subscriber_code, item.clone()).await?;
         Ok(CheckoutItemObject::new(item))
     }
 }
