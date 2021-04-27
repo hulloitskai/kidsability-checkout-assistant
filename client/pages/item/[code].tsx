@@ -1,5 +1,8 @@
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useEffect, useMemo, useState } from "react";
 import { HiCheckCircle, HiXCircle } from "react-icons/hi";
+
+import { useForm } from "react-hook-form";
+import { useLocalStorage } from "utils/storage";
 
 import { Container, VStack, Center } from "@chakra-ui/react";
 import { Spinner } from "@chakra-ui/react";
@@ -10,53 +13,64 @@ import { Input, Button } from "@chakra-ui/react";
 import { useQueryParam } from "utils/routing";
 import { useMutation, gql } from "@apollo/client";
 
-const SUBSCRIBER_CODE_KEY = "SubscriberCode";
+const SESSION_ID_KEY = "SessionId";
+
+type CheckoutFieldValues = {
+  sessionId: string;
+};
 
 const Checkout: FC = () => {
   const accessionCode = useQueryParam("code");
-  const [subscriberCode, setSubscriberCode] = useState("");
-  const [checkoutItem, { data, error, called }] = useMutation(
+  const [sessionSource, setSessionSource] = useState<"input" | "storage">(
+    "storage",
+  );
+  const [sessionId, setSessionId] = useLocalStorage<string | null>(
+    SESSION_ID_KEY,
+    null,
+  );
+
+  const [checkoutItem, { data, error }] = useMutation(
     gql`
-      mutation($subscriberCode: String!, $accessionCode: String!) {
-        checkoutItem(
-          subscriberCode: $subscriberCode
-          accessionCode: $accessionCode
-        ) {
-          accessionCode
+      mutation($input: CheckoutItemInput!) {
+        checkoutItem(input: $input) {
+          item {
+            accessionCode
+          }
         }
       }
     `,
     {
-      onError: error => {
-        window.localStorage.removeItem(SUBSCRIBER_CODE_KEY);
-        setSubscriberCode("");
+      onError: () => {
+        if (sessionSource === "storage") {
+          setSessionId(null);
+        }
       },
     },
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (!sessionId || !accessionCode) {
       return;
     }
-    if (!accessionCode) {
-      return;
-    }
-    const subscriberCode = window.localStorage.getItem(SUBSCRIBER_CODE_KEY);
-    if (subscriberCode) {
-      setSubscriberCode(subscriberCode);
-      checkoutItem({
-        variables: {
-          subscriberCode,
+    checkoutItem({
+      variables: {
+        input: {
+          sessionId,
           accessionCode,
         },
-      });
-    }
-  }, [accessionCode]);
+      },
+    });
+  }, [sessionId, accessionCode]);
 
+  const { register, handleSubmit } = useForm<CheckoutFieldValues>();
+  const onSubmit = handleSubmit(({ sessionId }) => {
+    setSessionSource("input");
+    setSessionId(sessionId);
+  });
   return (
-    <Container>
-      {(subscriberCode && called) || !accessionCode ? (
-        <Center minH="100vh" minW="100vw" p={4}>
+    <Container py={8}>
+      {sessionId || !accessionCode ? (
+        <Center>
           <VStack>
             {error ? (
               <Icon as={HiXCircle} color="red.500" boxSize={7} />
@@ -75,29 +89,13 @@ const Checkout: FC = () => {
           </VStack>
         </Center>
       ) : (
-        <VStack
-          as="form"
-          align="stretch"
-          p={4}
-          onSubmit={event => {
-            event.preventDefault();
-            window.localStorage.setItem(SUBSCRIBER_CODE_KEY, subscriberCode);
-            if (subscriberCode && accessionCode) {
-              checkoutItem({
-                variables: {
-                  subscriberCode,
-                  accessionCode,
-                },
-              });
-            }
-          }}
-        >
+        <VStack as="form" align="stretch" onSubmit={onSubmit}>
           <FormControl>
-            <FormLabel>Enter your device code:</FormLabel>
+            <FormLabel>Enter your session ID:</FormLabel>
             <Input
-              value={subscriberCode}
+              type="number"
               placeholder="123456"
-              onChange={({ target: { value } }) => setSubscriberCode(value)}
+              {...register("sessionId")}
             />
           </FormControl>
           <Button type="submit">Continue</Button>

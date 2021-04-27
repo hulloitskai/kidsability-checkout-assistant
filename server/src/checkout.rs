@@ -25,14 +25,13 @@ impl CheckoutNotifier {
 
     pub async fn notify(
         &self,
-        subscriber_code: &str,
+        session_id: &str,
         item: CheckoutItem,
     ) -> Result<()> {
         let sender = {
             let senders = self.senders.lock().unwrap();
-            let sender = senders
-                .get(subscriber_code)
-                .context("invalid subscriber code")?;
+            let sender =
+                senders.get(session_id).context("invalid session ID")?;
             sender.clone()
         };
         sender.send(item).await?;
@@ -41,14 +40,14 @@ impl CheckoutNotifier {
 
     pub fn subscribe(
         &self,
-        subscriber_code: &str,
+        session_id: &str,
     ) -> Result<Receiver<CheckoutItem>> {
         let mut senders = self.senders.lock().unwrap();
-        if senders.contains_key(subscriber_code) {
-            bail!("subscriber already exists")
+        if senders.contains_key(session_id) {
+            bail!("invalid session ID")
         }
         let (sender, receiver) = channel(1);
-        senders.insert(subscriber_code.to_owned(), sender);
+        senders.insert(session_id.to_owned(), sender);
         Ok(receiver)
     }
 }

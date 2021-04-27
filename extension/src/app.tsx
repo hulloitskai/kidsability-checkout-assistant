@@ -1,5 +1,4 @@
 import { FC, useEffect, useMemo, useState } from "react";
-
 import { ChakraProvider } from "@chakra-ui/react";
 import theme from "./theme";
 
@@ -9,7 +8,7 @@ import { Input } from "@chakra-ui/react";
 import { FormControl, FormLabel } from "@chakra-ui/react";
 import { Button } from "@chakra-ui/react";
 
-import { getCurrentTab, getSubscriberCode } from "./utils";
+import { getCurrentTab, getSessionId } from "./utils";
 import { subscribeAs, unsubscribe } from "./utils";
 import { checkoutItem, parseUrl } from "./utils";
 
@@ -39,9 +38,9 @@ const App: FC = () => {
   const url = useCurrentUrl(tab);
 
   const [accessionCode, setAccessionCode] = useState<string>("");
-  const [subscriberCode, setSubscriberCode] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   useEffect(() => {
-    getSubscriberCode().then(setSubscriberCode);
+    getSessionId().then(setSessionId);
   }, [tab]);
 
   const isLoggedIn = useMemo(() => {
@@ -64,7 +63,7 @@ const App: FC = () => {
           <VStack align="stretch" spacing={4}>
             <VStack align="stretch">
               <Heading fontSize="md">Automatic Reservation</Heading>
-              {subscriberCode && (
+              {sessionId && (
                 <VStack
                   align="stretch"
                   p={1.5}
@@ -72,32 +71,32 @@ const App: FC = () => {
                   color="blue.600"
                   rounded="sm"
                 >
-                  <Text fontSize="sm">Device Code:</Text>
+                  <Text fontSize="sm">Session ID:</Text>
                   <Center p={1} pb={2.5}>
                     <Text fontSize="xl" fontWeight="semibold">
-                      {subscriberCode}
+                      {sessionId}
                     </Text>
                   </Center>
                 </VStack>
               )}
               <Button
-                colorScheme={subscriberCode ? "red" : "green"}
+                colorScheme={sessionId ? "red" : "green"}
                 isDisabled={!tab}
                 onClick={() => {
                   if (!tab?.id) {
                     throw new Error("Missing current tab.");
                   }
-                  if (!subscriberCode) {
+                  if (!sessionId) {
                     const code = Math.floor(100000 + Math.random() * 900000);
-                    setSubscriberCode(code.toString());
+                    setSessionId(code.toString());
                     subscribeAs(tab.id, code.toString());
                   } else {
-                    setSubscriberCode(null);
+                    setSessionId(null);
                     unsubscribe();
                   }
                 }}
               >
-                {subscriberCode ? "Deactivate" : "Activate"}
+                {sessionId ? "Deactivate" : "Activate"}
               </Button>
             </VStack>
             <Divider />

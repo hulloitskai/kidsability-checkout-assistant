@@ -17,11 +17,11 @@ impl Subscription {
     async fn item(
         &self,
         ctx: &Context<'_>,
-        subscriber_code: String,
+        session_id: String,
     ) -> FieldResult<impl Stream<Item = CheckoutItemObject>> {
         let notifier: &CheckoutNotifier = ctx.data_unchecked();
-        let receiver = notifier.subscribe(&subscriber_code)?;
+        let receiver = notifier.subscribe(&session_id)?;
         let stream = ReceiverStream::new(receiver);
-        Ok(stream.map(|item| CheckoutItemObject::new(item)))
+        Ok(stream.map(CheckoutItemObject::new))
     }
 }

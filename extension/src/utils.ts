@@ -12,13 +12,13 @@ export const getCurrentTab = async (): Promise<chrome.tabs.Tab> => {
   });
 };
 
-export const getSubscriberCode = async (): Promise<string | null> => {
+export const getSessionId = async (): Promise<string | null> => {
   return new Promise((resolve) => {
     return chrome.runtime.sendMessage(
       {
-        type: "kidsability-checkout-assistant/subscriber-code",
+        type: "kidsability-checkout-assistant/session",
       },
-      (code) => resolve(code ?? null)
+      (id) => resolve(id ?? null)
     );
   });
 };
@@ -90,12 +90,12 @@ export const checkoutItem = async (
 
 export const subscribeAs = async (
   tabId: number,
-  subscriberCode: string
+  sessionId: string
 ): Promise<void> => {
   chrome.runtime.sendMessage({
     type: "kidsability-checkout-assistant/subscribe",
     tabId,
-    subscriberCode,
+    sessionId,
   });
 };
 
