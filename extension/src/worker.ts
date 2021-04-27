@@ -5,7 +5,7 @@ import { gql } from "@apollo/client";
 import { checkoutItem } from "./utils";
 
 const wsLink = new WebSocketLink({
-  uri: "ws://localhost:3000/graphql",
+  uri: "wss://kidsability-checkout-assistant.stevenxie.me/graphql",
   options: {
     reconnect: true,
   },

@@ -1,0 +1,42 @@
+name: extension
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:lts
+    steps:
+      - name: Install CRX3
+        run: yarn global add crx3
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+              ${{ runner.os }}-build-
+              ${{ runner.os }}-
+      - name: Install extension dependencies
+        run: yarn install
+        working-directory: extension
+      - name: Build extension
+        run: yarn build
+        working-directory: extension
+      - name: Pack extension
+        run: crx3 -o kidsability-checkout-assistant.crx ./build/
+        working-directory: extension
+      - uses: ncipollo/release-action@v1
+        name: Create release
+        with:
+          artifacts: ./extension/kidsability-checkout-assistant.crx
+          bodyFile: ./.github/RELEASE.md
+          token: ${{ github.token }}
