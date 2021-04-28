@@ -68,7 +68,7 @@ const Checkout: FC = () => {
     setSessionId(sessionId);
   });
   return (
-    <Container py={8}>
+    <Container py={6}>
       {sessionId || !accessionCode ? (
         <Center>
           <VStack>

@@ -12,7 +12,7 @@
   },
   "background": {
     "scripts": ["worker.js"],
-    "persistent": false
+    "persistent": true
   },
   "permissions": ["tabs", "*://*.kidsability.org/*"]
 }
